@@ -6,7 +6,7 @@ msg3:   .asciiz " O Resultado da potencia e :  "
 
         .text
 
-main:   li $v0, 4       # syscall 4 (printa a solicitação do  numero)
+main:   li $v0, 4       # syscall 4 (printa a solicitaÃ§Ã£o do  numero)
         la $a0, msg1     # argument: primeira mensagem
         syscall         # print the string
         
@@ -16,7 +16,7 @@ main:   li $v0, 4       # syscall 4 (printa a solicitação do  numero)
         move $t0,$v0
       
         
-        li $v0, 4       # syscall 4 (printa a solicitação do expoente)
+        li $v0, 4       # syscall 4 (printa a solicitaÃ§Ã£o do expoente)
         la $a0, msg2     # argument: segunda mensagem
         syscall         # print the string
         
