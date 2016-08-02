@@ -3,14 +3,16 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Hashtable;
-import java.util.Map;
+import java.util.Stack;
 
 
 public class Assembler {
 
 	private Hashtable registradores;
 	private Hashtable instrucoes;
+	private Hashtable diretrizes;
 	private ArrayList labels;
+	private ArrayList linhas;
 	  int numReg = 0;	
 
 	public Assembler(){
@@ -18,8 +20,13 @@ public class Assembler {
 
       
 		registradores = new Hashtable();
+		diretrizes = new Hashtable();
+
 		instrucoes = new Hashtable();
         labels = new ArrayList();
+        linhas = new ArrayList();
+
+        Stack execução = new Stack();
 
 		carregarRegistradores();
 	}
@@ -113,7 +120,7 @@ public class Assembler {
 	    instrucoes.put("addi",  "I210000001");
 	    instrucoes.put("addiu", "I210000010");
 	    instrucoes.put("la",    "I101000011");
-	    instrucoes.put("li",    "I110000100");
+	    instrucoes.put("li",    "I210000100");
 	    instrucoes.put("lui",   "I110000101");
 	    //Logic
 	    instrucoes.put("andi",  "I210000110");
@@ -161,16 +168,21 @@ public class Assembler {
 	        	break;
 	        }
 	        if(linha.contains(";")){
-	        linha =	limparComentario(linha,";");
+	        linha =	limparComentario(linha,";");// retirando comentarios
 	        	
 	        }
 	        
 	        else if(linha.contains("#")){
-	        linha =	limparComentario(linha,"#");
+	        linha =	limparComentario(linha,"#"); // retirando comentarios
 	        	
 	        }
+	        linha = linha.trim();
+	        if(!linha.trim().equals("")){ // retirando linhas em branco
+	        	   linhas.add(linha);
+	        }
+	     
 	       
-	        if(linha.contains("$")){
+	        if(linha.contains("$")){         // verificando se a linha possui um registrador
 	        	
 	        	 if( !validarRegistradores(linha)){
 	  	    	   System.out.println("Registrador não conhecido");
@@ -199,40 +211,38 @@ public class Assembler {
 
  public void segundaLeitura(String nome){
 	 
+	 for(int i = 0; i < linhas.size(); i++){
+		char array [] = ((String) linhas.get(i)).toCharArray();
+		 
+		 
+		 if(eDiretriz((String) linhas.get(i))){
+           String diretriz = (String)linhas.get(i);			 
+           System.out.println("Carregou " + diretriz);
+           i++;		 
+          
+
+		 }
+        if(((String) linhas.get(i)).contains(":")){
+
+        	if(i == linhas.size()-1){
+        		break;
+        	}
+        	
+        	i++;
+
+        }
+		String codigo [] = ((String) linhas.get(i)).split(" ");
+        
+		
+		String arraycont [] = ((String) linhas.get(i)).split(",");
+       
+        instrucaoValida( codigo[0], arraycont.length );
+       
+
+	 
+	 }
 	 
 	 
-	 try {
-	      FileReader arq = new FileReader(nome);
-	      BufferedReader lerArq = new BufferedReader(arq);
-	 
-	      String linha = lerArq.readLine(); 
-	     
-	      while (linha != null) {
-	        
-	        linha = lerArq.readLine();
-	        if(linha == null){
-	        	break;
-	        }
-	        
-	        String array [] = linha.split(",");
-	        String label = array[array.length -1];
-	        if(!labels.contains(label)){
-	        	System.out.println("A label : " + label + " não existe");
-	        	
-	        }
-	        
-	        
-	        	
-	      }
-	      
-	 
-	      arq.close();
-	    } catch (IOException e) {
-	        System.err.printf("Erro na abertura do arquivo: %s.\n",
-	          e.getMessage());
-	    }
-	 
-	    System.out.println();
 	 
 	 
 	 
@@ -308,33 +318,45 @@ public boolean validarRegistradores(String linha){
 	
 }
 
+
+public void filtraInstrucao(String linha){
+	String array[] = linha.split(" ");
+	System.out.println(array[0]);
+	
+	
+	
+}
+
 public boolean eDiretriz(String linha){
-	char array[] = linha.toCharArray();
-    for(int i = 0; i< linha.length(); i++){
-    	
-    	if( array[i] != ' ' ){
-    		
-    		
-    		StringBuilder sb = new StringBuilder();
-			sb.append(array[i]);
-			sb.append(array[i +1]);
-			sb.append(array[i +2]);
-			nomeRegistrador = sb.toString();
-    		
-    		
-    		break;
-    	
-    	
-    	
-    	}
+	if(linha.charAt(0) == '.'){
+		return true;
+	}
    
-    
-    
-    }
+    	return false;
+    	
+
+
+}
   
-
-
-
+public boolean instrucaoValida(String codigo, int para){
+	
+	if(instrucoes.containsKey(codigo)){
+		 System.out.println("Gennnteeee"); 
+		String codigos = (String) instrucoes.get(codigo);
+		char parametros = codigos.charAt(1);
+		int numparametros = (int)parametros;
+	   if(para == numparametros){
+		  System.out.println("Instrucção " + codigo + " Valida");
+		   return true;
+	   }
+		
+	}
+	 System.out.println(" Pòraaaa"); 
+	return false;
+	
+}
 }
 
-}
+
+
+
