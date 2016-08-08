@@ -14,11 +14,8 @@ main:
         addi $t3,$t3,2
         add $t2,$t2,$t3
         
-
 	addi $t1, $t1,1
 	J loop
-	
-	
 	
 	exit:
 	move $a0,$t1
