@@ -3,18 +3,20 @@
 
 	main: 
 
-	li $t0, 13 #atÈ onde v„o ser gerados os numeros primos
+	li $t0, 13 #at√© onde v√£o ser gerados os numeros primos
 	li $t1, 1 # 
-	li $t2, 0 #conta quantas vezes o resto da divis„o È 0
+	li $t2, 0 #conta quantas vezes o resto da divis√£o √© 0
 	li $t3, 0
-
+	
+	addi $t0, $t0, 1
+	
 	loop: 
-
-
+	
 	move $t2, $zero
 	move $t3, $zero
 	addi $t1, $t1, 1
 	addi $t2, $t2, 1
+	
 
 	beq $t1, $t0, exit
 	J loop2
@@ -49,8 +51,8 @@
  	printar:
   
       	move $a0,$t1
-      	#li $v0,1 Impress„o pra testar o algoritmo
-      	#syscall
+      	# li $v0,1 Impress√£o para teste
+      	# syscall
       	J loop
       	
       	
@@ -58,8 +60,6 @@
       	
       	addi $t2, $t2, 1
       	J loop2
-
-
 
 
 
