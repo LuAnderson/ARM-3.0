@@ -5,11 +5,24 @@ import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Stack;
 
+import javax.swing.text.html.HTMLEditorKit.Parser;
+
 
 public class Assembler {
 
 	private Hashtable registradores;
 	private Hashtable instrucoes;
+	private Hashtable labelEnderecada;
+	private Hashtable pseudoInstrucao;
+
+	
+	private ArrayList instrucoesUsadas;
+	private ArrayList instrucoesUsadasSaltos;
+	private ArrayList referenciasSaltos;
+	final double memoria =  65536; // 64kbytes
+    private ArrayList execução;
+    private int proximaLabel = 0;
+
 	private Hashtable diretrizes;
 	private ArrayList labels;
 	private ArrayList linhas;
@@ -25,10 +38,13 @@ public class Assembler {
 		instrucoes = new Hashtable();
         labels = new ArrayList();
         linhas = new ArrayList();
-
-        Stack execução = new Stack();
+        instrucoesUsadas = new ArrayList();
+		instrucoesUsadasSaltos = new ArrayList();
+		referenciasSaltos = new ArrayList();
+		execução = new ArrayList();
 
 		carregarRegistradores();
+		carregarInstrucoes();
 	}
 
 	private void carregarRegistradores() {
@@ -117,7 +133,7 @@ public class Assembler {
 	    
 	    //I - instructions------------------------------------
 	    //Arithmetic
-	    instrucoes.put("addi",  "I210000001");
+	    instrucoes.put("addi",  "I310000001");
 	    instrucoes.put("addiu", "I210000010");
 	    instrucoes.put("la",    "I101000011");
 	    instrucoes.put("li",    "I210000100");
@@ -132,7 +148,7 @@ public class Assembler {
 		instrucoes.put("slti",  "I210001010");
 		instrucoes.put("sltiu", "I210001011");
 		//Branches and jump
-		instrucoes.put("beq",   "I201001100");
+		instrucoes.put("beq",   "I301001100");
 		instrucoes.put("beqz",  "I101001101");
 		instrucoes.put("bne",   "I201001110");
 		instrucoes.put("bnez",  "I101001111");
@@ -146,7 +162,7 @@ public class Assembler {
 		
 		//J - instructions------------------------------------
 		//Branches and jump
-		instrucoes.put("j",     "J001010000");
+		instrucoes.put("J",     "J001010000");
 		instrucoes.put("jal",   "J001010001");
 	}
 
@@ -232,12 +248,37 @@ public class Assembler {
 
         }
 		String codigo [] = ((String) linhas.get(i)).split(" ");
-        
+		System.out.println(codigo[0]);
+		  String instrucao = codigo[0]; // separando a intrução da operação
+		  
+		  StringBuilder sb = new StringBuilder();
+			
+		  for( int j = 1; j< codigo.length; j ++){ // montando a operação
+			  sb.append(codigo[j]);
+				
+				
+			                             
+			  
+		  }
+		  String operacao = sb.toString().trim(); // retira espaços em branco da operação
+		  System.out.println(operacao);
+		 
+		String arraycont [];
 		
-		String arraycont [] = ((String) linhas.get(i)).split(",");
-       
-        instrucaoValida( codigo[0], arraycont.length );
-       
+		
+			 arraycont = ((String) linhas.get(i)).split(",");
+			if( !instrucaoValida( instrucao, arraycont.length ,operacao)){
+				
+				System.out.println(" O montador será encerrado!!!!");
+				break;
+				
+			}
+								
+		       
+			
+		
+		
+		 
 
 	 
 	 }
@@ -265,8 +306,12 @@ public void carregarLabels(String linha){
     	String array[] =  new String[2];
     	array = linha.split(":");
     	labels.add(array[0]);
-    }
-}
+	
+	}
+
+	
+
+   }
 
 public boolean validarRegistradores(String linha){
 	
@@ -338,23 +383,254 @@ public boolean eDiretriz(String linha){
 
 }
   
-public boolean instrucaoValida(String codigo, int para){
+public boolean instrucaoValida(String codigo, int para, String segundaParte){
 	
 	if(instrucoes.containsKey(codigo)){
-		 System.out.println("Gennnteeee"); 
 		String codigos = (String) instrucoes.get(codigo);
 		char parametros = codigos.charAt(1);
-		int numparametros = (int)parametros;
-	   if(para == numparametros){
-		  System.out.println("Instrucção " + codigo + " Valida");
+		int numparametros =  Character.getNumericValue(parametros);
+		segundaParte = segundaParte.trim();
+		
+		
+
+if(instrucaoSalto(codigo, segundaParte)){
+
+	System.out.println("Instrucção " + codigo + " Valida");
+			 return true;
+	 }
+else if(para == numparametros){
+		 System.out.println("Instrucção " + codigo + " Valida");
+		 if( usaLabel(codigos)){
+			 
+			 String label = pegaLabel(segundaParte);
+			 
+			 if(labelExiste(label)){
+				 
+				 instrucoesUsadas.add(codigos);
+				   return true;
+			 }
+			 
+			 
+			 else{
+				 return false;
+			 }
+		 }
+		 instrucoesUsadas.add(codigos);
 		   return true;
 	   }
+		 
+		  
 		
 	}
-	 System.out.println(" Pòraaaa"); 
 	return false;
 	
 }
+
+
+public boolean instrucaoSalto(String codigo, String segundaParte){
+	char inicial = codigo.charAt(0);
+	if(inicial == 'J'|| codigo.equals("J")){
+		
+		String operacao = (String) instrucoes.get(codigo);
+		if(usaLabel(operacao)){
+			
+			if(labelExiste(segundaParte)){
+				instrucoesUsadas.add(operacao);
+				referenciasSaltos.add(instrucoesUsadas.size()-1, segundaParte);;
+				return true;
+				
+				
+			}
+		}
+		
+		
+		
+		
+		
+	}
+	
+	return false;
+	
+}
+
+public boolean labelExiste(String label){
+	
+	
+	 if( labels.contains(label)){
+		 return true;
+	 }
+	 System.out.println(" A label " + label + "  Não foi declarada");
+	 return false;
+}
+public boolean usaLabel(String codigos){
+	char label = codigos.charAt(3);
+	System.out.println(label);
+	if(label == '1'){
+		return true;
+	}
+
+    return false;
+}
+
+public String pegaLabel(String operacao){
+	
+	String termos [] = operacao.split(",");
+	String label = null;
+	for(int i = 0; i < termos.length; i++){
+		
+		if(termos[i].contains("$") || termos[i].contains(" ")){
+		
+		}
+	
+		else{
+			label = termos[i];
+		}
+	
+	}
+	return label;
+}
+
+
+public void montar (String instrução, String operacao){
+	char tipo = instrução.charAt(0);
+	
+	
+	switch(tipo){
+	
+	
+	case 'R' :
+		
+		int numReg;
+		numReg = Character.getNumericValue(instrução.charAt(3)); 
+			
+		if(numReg == 2){
+			String opcode = "000000";
+			String registradorDestino = pegarRegistrador(operacao, 0);
+			int regDestino = montarRegistrador(registradorDestino);
+			String registrador1 = pegarRegistrador(operacao, 1);
+			int reg1 = montarRegistrador(registrador1);
+		}
+		
+		else if (numReg == 3){
+			String opcode = "000000";
+			String registradorDestino = pegarRegistrador(operacao, 0);
+			int regDestino = montarRegistrador(registradorDestino);
+			String registrador1 = pegarRegistrador(operacao, 1); // pegando o valor numerico do registrador
+			int reg1 = montarRegistrador(registrador1);
+			String registrador2 = pegarRegistrador(operacao,2);
+	        int reg2 = montarRegistrador(registrador2);
+
+		}
+			
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		break;
+		
+		
+	case 'I':
+		break;
+		
+		
+	
+	case 'J':
+		break;
+	
+	
+	
+		
+		
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+}
+
+
+public String pegarRegistrador(String instrucao, int pos){
+	String termos[] = instrucao.split(";");
+	
+		String registrador = (String)registradores.get(termos[pos]);
+		return registrador;
+	
+	
+	
+}
+
+public int montarRegistrador (String registrador){
+	
+	int reg = (int) registradores.get(registrador);
+	
+	return reg;
+	
+}
+
+
+public boolean ePseudo(String instrucao){
+	if(pseudoInstrucao.containsKey(instrucao) ){
+		
+		return true;
+	}
+	
+	return false;
+}
+
+public void traduzirPseudo(String operacao []){
+	
+	
+	switch(operacao [0]){
+	
+	case "li":
+	{
+		
+		
+		
+		break;
+		
+		
+	}
+		
+		
+		
+		
+		
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	}
+	
+	
+}
+
+
+
+
+
+
+
+
 }
 
 

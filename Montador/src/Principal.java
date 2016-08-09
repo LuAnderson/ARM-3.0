@@ -10,8 +10,8 @@ public class Principal {
 
 	Assembler ass = new Assembler();
 	
-	ass.primeiraLeitura("C:/Users/win7/Desktop/SD/Montador/src/Vaiii.asm");
-	ass.segundaLeitura("C:/Users/win7/Desktop/SD/Montador/src/Vaiii.asm");		 
+	ass.primeiraLeitura("C:/Users/win7/Desktop/SD/Montador/src/PotenciaTeste.asm");
+	ass.segundaLeitura("C:/Users/win7/Desktop/SD/Montador/src/PotenciaTeste.asm");		 
 			
 		
 		  }
