@@ -83,7 +83,7 @@ public class Assembler {
 	}
 
 	private void carregarInstrucoes(){
-		instrucoes.put("add",  "R300000000000001");
+		instrucoes.put("add",  "R300000000100000");
 	    instrucoes.put("addu", "R300000000000010");
 	    instrucoes.put("clz",  "R200000000000011");
 	    instrucoes.put("clo",  "R200000000000100");
@@ -248,7 +248,7 @@ public class Assembler {
 
         }
 		String codigo [] = ((String) linhas.get(i)).split(" ");
-		System.out.println(codigo[0]);
+	//	System.out.println(codigo[0]);
 		  String instrucao = codigo[0]; // separando a intrução da operação
 		  
 		  StringBuilder sb = new StringBuilder();
@@ -261,7 +261,7 @@ public class Assembler {
 			  
 		  }
 		  String operacao = sb.toString().trim(); // retira espaços em branco da operação
-		  System.out.println(operacao);
+		  //System.out.println(operacao);
 		 
 		String arraycont [];
 		
@@ -274,7 +274,6 @@ public class Assembler {
 				
 			}
 								
-		       
 			
 		
 		
@@ -284,6 +283,7 @@ public class Assembler {
 	 }
 	 
 	 
+	
 	 
 	 
 	 
@@ -366,7 +366,7 @@ public boolean validarRegistradores(String linha){
 
 public void filtraInstrucao(String linha){
 	String array[] = linha.split(" ");
-	System.out.println(array[0]);
+//	System.out.println(array[0]);
 	
 	
 	
@@ -395,11 +395,11 @@ public boolean instrucaoValida(String codigo, int para, String segundaParte){
 
 if(instrucaoSalto(codigo, segundaParte)){
 
-	System.out.println("Instrucção " + codigo + " Valida");
+	//System.out.println("Instrucção " + codigo + " Valida");
 			 return true;
 	 }
 else if(para == numparametros){
-		 System.out.println("Instrucção " + codigo + " Valida");
+	//	 System.out.println("Instrucção " + codigo + " Valida");
 		 if( usaLabel(codigos)){
 			 
 			 String label = pegaLabel(segundaParte);
@@ -407,6 +407,8 @@ else if(para == numparametros){
 			 if(labelExiste(label)){
 				 
 				 instrucoesUsadas.add(codigos);
+				 montar (codigos, segundaParte);
+
 				   return true;
 			 }
 			 
@@ -416,7 +418,9 @@ else if(para == numparametros){
 			 }
 		 }
 		 instrucoesUsadas.add(codigos);
-		   return true;
+		 montar (codigos, segundaParte);
+  
+		 return true;
 	   }
 		 
 		  
@@ -436,7 +440,7 @@ public boolean instrucaoSalto(String codigo, String segundaParte){
 			
 			if(labelExiste(segundaParte)){
 				instrucoesUsadas.add(operacao);
-				referenciasSaltos.add(instrucoesUsadas.size()-1, segundaParte);;
+				//referenciasSaltos.add(instrucoesUsadas.size()-1, segundaParte);;
 				return true;
 				
 				
@@ -464,7 +468,7 @@ public boolean labelExiste(String label){
 }
 public boolean usaLabel(String codigos){
 	char label = codigos.charAt(3);
-	System.out.println(label);
+	//System.out.println(label);
 	if(label == '1'){
 		return true;
 	}
@@ -501,28 +505,33 @@ public void montar (String instrução, String operacao){
 	case 'R' :
 		
 		int numReg;
-		numReg = Character.getNumericValue(instrução.charAt(3)); 
-			
+		char instruc[] = instrução.toCharArray();
+		numReg = Character.getNumericValue(instruc[1]); 
+		int registradorDestino;
+		int registrador1;
+		int registrador2;
+		
 		if(numReg == 2){
 			String opcode = "000000";
-			String registradorDestino = pegarRegistrador(operacao, 0);
-			int regDestino = montarRegistrador(registradorDestino);
-			String registrador1 = pegarRegistrador(operacao, 1);
-			int reg1 = montarRegistrador(registrador1);
+			
+			System.out.println(operacao);
+			 registradorDestino = pegarRegistrador(operacao, 0);
+			 registrador1 = pegarRegistrador(operacao, 1);
+			
+			
+			System.out.println(registradorDestino + " Recebe " + registrador1 );
 		}
 		
 		else if (numReg == 3){
 			String opcode = "000000";
-			String registradorDestino = pegarRegistrador(operacao, 0);
-			int regDestino = montarRegistrador(registradorDestino);
-			String registrador1 = pegarRegistrador(operacao, 1); // pegando o valor numerico do registrador
-			int reg1 = montarRegistrador(registrador1);
-			String registrador2 = pegarRegistrador(operacao,2);
-	        int reg2 = montarRegistrador(registrador2);
-
+			 registradorDestino = pegarRegistrador(operacao, 0);
+			 registrador1 = pegarRegistrador(operacao, 1); // pegando o valor numerico do registrador
+			 registrador2 = pegarRegistrador(operacao,2);
+	        System.out.println(registradorDestino + " Recebe " + registrador1 + " segundo " + registrador2);
 		}
 			
 		
+		int function [] = getFunction(instruc);
 		
 		
 		
@@ -562,10 +571,12 @@ public void montar (String instrução, String operacao){
 }
 
 
-public String pegarRegistrador(String instrucao, int pos){
-	String termos[] = instrucao.split(";");
+public int pegarRegistrador(String instrucao, int pos){
+	String termos[] = instrucao.split(",");
 	
-		String registrador = (String)registradores.get(termos[pos]);
+	System.out.println(instrucao);	
+	int registrador = (int) registradores.get(termos[pos]);
+		
 		return registrador;
 	
 	
@@ -590,6 +601,16 @@ public boolean ePseudo(String instrucao){
 	return false;
 }
 
+public int [] getFunction(char [] instrucao){
+	int function [] = new int[6];
+	for(int i = 10; i < instrucao.length; i++){
+		function[i] = Character.getNumericValue(instrucao[i]);
+		
+	}
+
+  return function;
+
+}
 public void traduzirPseudo(String operacao []){
 	
 	
