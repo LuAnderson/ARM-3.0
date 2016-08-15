@@ -1,11 +1,12 @@
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Hashtable;
-import java.util.Stack;
-
-import javax.swing.text.html.HTMLEditorKit.Parser;
+import java.util.List;
 
 
 public class Assembler {
@@ -17,24 +18,30 @@ public class Assembler {
 
 	
 	private ArrayList instrucoesUsadas;
+	private Hashtable memoriaAB;
+
 	private ArrayList instrucoesUsadasSaltos;
 	private ArrayList referenciasSaltos;
-	final double memoria =  65536; // 64kbytes
+	private List <String> memoria = new ArrayList<String>(65536) ; // 64kbytes
     private ArrayList execução;
-    private int proximaLabel = 0;
+    private int numInstrucoes = 0;
 
 	private Hashtable diretrizes;
 	private ArrayList labels;
 	private ArrayList linhas;
 	  int numReg = 0;	
-
-	public Assembler(){
+	  Writer fos;   
+	  	String palavra;
+	  	List palavras = new ArrayList();
+    private String nomeArq = null;
+	public Assembler() throws IOException{
 		
 
       
 		registradores = new Hashtable();
+		memoriaAB = new Hashtable();
 		diretrizes = new Hashtable();
-
+		labelEnderecada = new Hashtable();
 		instrucoes = new Hashtable();
         labels = new ArrayList();
         linhas = new ArrayList();
@@ -42,6 +49,7 @@ public class Assembler {
 		instrucoesUsadasSaltos = new ArrayList();
 		referenciasSaltos = new ArrayList();
 		execução = new ArrayList();
+		fos  = new BufferedWriter(new FileWriter("saida.txt", false));
 
 		carregarRegistradores();
 		carregarInstrucoes();
@@ -83,12 +91,12 @@ public class Assembler {
 	}
 
 	private void carregarInstrucoes(){
-		instrucoes.put("add",  "R300000000100000");
-	    instrucoes.put("addu", "R300000000000010");
-	    instrucoes.put("clz",  "R200000000000011");
-	    instrucoes.put("clo",  "R200000000000100");
-	    instrucoes.put("move", "R200000000000101");
-	    instrucoes.put("negu", "R200000000000110");
+		instrucoes.put("add",  "R3000000000100000");
+	    instrucoes.put("addu", "R3000000000000010");
+	    instrucoes.put("clz",  "R2000000000000011");
+	    instrucoes.put("clo",  "R2000000000000100");
+	    instrucoes.put("move", "R2001000000000101");
+	    instrucoes.put("negu", "R2001000000000110");
 	    instrucoes.put("sub",  "R300000000000111");
 	    instrucoes.put("subu", "R300000000001000");
 	    instrucoes.put("seh",  "R200000000001001");
@@ -96,7 +104,7 @@ public class Assembler {
 	    //Logic
 	    instrucoes.put("and",  "R300000000001011");
 	    instrucoes.put("nor",  "R300000000001100");
-	    instrucoes.put("not",  "R200000000001101");
+	    instrucoes.put("not",  "R2001000000001101");
 	    instrucoes.put("or",   "R300000000001110");
 	    instrucoes.put("xor",  "R300000000001111");
 	    //Multiplication and Division
@@ -108,6 +116,8 @@ public class Assembler {
 	    instrucoes.put("msubu","R200000000010101");
 	    instrucoes.put("mul",  "R300000000010110");
 	    instrucoes.put("mult", "R200000000010111");
+	  //Multiplication and Division
+	  	instrucoes.put("multu", "R2000000011000");
 	    //Shift and Rotate
 	    instrucoes.put("sll",  "R210000000011000");
 	    instrucoes.put("sllv", "R300000000011001");
@@ -120,8 +130,8 @@ public class Assembler {
 	    //Conditionals and move
 	    instrucoes.put("slt",  "R300000000100000");
 	    instrucoes.put("sltu", "R300000000100001");
-	    instrucoes.put("movn", "R300000000100010");
-	    instrucoes.put("movz", "R300000000100011");
+	    instrucoes.put("movn", "R3001000000100010");
+	    instrucoes.put("movz", "R3001000000100011");
 	    //Acc access
 	    instrucoes.put("mfhi", "R100000000100100");
 	    instrucoes.put("mflo", "R100000000100101");
@@ -133,41 +143,40 @@ public class Assembler {
 	    
 	    //I - instructions------------------------------------
 	    //Arithmetic
-	    instrucoes.put("addi",  "I310000001");
-	    instrucoes.put("addiu", "I210000010");
-	    instrucoes.put("la",    "I101000011");
-	    instrucoes.put("li",    "I210000100");
-	    instrucoes.put("lui",   "I110000101");
+	    instrucoes.put("addi",  "I3000001000");
+	    instrucoes.put("addiu", "I3000001001");
+	    instrucoes.put("li",    "I2001000100");
+	    instrucoes.put("lui",   "I2000001111");
 	    //Logic
-	    instrucoes.put("andi",  "I210000110");
-	    instrucoes.put("ori",   "I210000111");
-	    instrucoes.put("xori",  "I210001000");
-	    //Multiplication and Division
-		instrucoes.put("multu", "I110001001");
+	    instrucoes.put("andi",  "I3000001100");
+	    instrucoes.put("ori",   "I3000001101");
+	    instrucoes.put("xori",  "I3000001110");
+	    
 		//Conditionals and move
-		instrucoes.put("slti",  "I210001010");
-		instrucoes.put("sltiu", "I210001011");
+		instrucoes.put("slti",  "I3000001010");
+		instrucoes.put("sltiu", "I3000001011");
 		//Branches and jump
-		instrucoes.put("beq",   "I301001100");
-		instrucoes.put("beqz",  "I101001101");
-		instrucoes.put("bne",   "I201001110");
-		instrucoes.put("bnez",  "I101001111");
+		instrucoes.put("beq",   "I3100000100");
+		instrucoes.put("beqz",  "I1100000110");
+		instrucoes.put("bne",   "I2100000101");
+		instrucoes.put("bnez",  "I1100000111");
 		//Load and store
-		instrucoes.put("lb",    "I210010010");
-		instrucoes.put("lw",    "I210010011");
-		instrucoes.put("lh",    "I210010100");
-		instrucoes.put("sb",    "I210010101");
-		instrucoes.put("sh",    "I210010110");
-		instrucoes.put("sw",    "I210010111");
+		instrucoes.put("lb",    "I211100000");
+		instrucoes.put("lw",    "I211100011");
+		instrucoes.put("lh",    "I211100001");
+		instrucoes.put("sb",    "I211101000");
+		instrucoes.put("sh",    "I211101001");
+		instrucoes.put("sw",    "I211101011");
 		
 		//J - instructions------------------------------------
 		//Branches and jump
-		instrucoes.put("J",     "J001010000");
-		instrucoes.put("jal",   "J001010001");
+		instrucoes.put("J",     "J01000010");
+		instrucoes.put("jal",   "J01000011");
+
 	}
 
  public void  primeiraLeitura(String nome){
-	 
+          nomeArq = nome;    // usado para leituras futuras no código	 
  
 	
 	    System.out.printf("\nConteúdo do arquivo texto:\n");
@@ -225,7 +234,7 @@ public class Assembler {
 	  }
 	
 
- public void segundaLeitura(String nome){
+ public void segundaLeitura(String nome) throws IOException{
 	 
 	 for(int i = 0; i < linhas.size(); i++){
 		char array [] = ((String) linhas.get(i)).toCharArray();
@@ -247,10 +256,12 @@ public class Assembler {
         	i++;
 
         }
+        
+        
 		String codigo [] = ((String) linhas.get(i)).split(" ");
-	//	System.out.println(codigo[0]);
+	
 		  String instrucao = codigo[0]; // separando a intrução da operação
-		  
+		 
 		  StringBuilder sb = new StringBuilder();
 			
 		  for( int j = 1; j< codigo.length; j ++){ // montando a operação
@@ -261,18 +272,72 @@ public class Assembler {
 			  
 		  }
 		  String operacao = sb.toString().trim(); // retira espaços em branco da operação
-		  //System.out.println(operacao);
-		 
-		String arraycont [];
+			String arraycont [];
+           String codigos = (String) instrucoes.get(instrucao);
+     
+		  if(codigos.charAt(4) == '1'){
+	    		String traducao[] =	traduzirPseudo(instrucao,operacao );
+	    		if(traducao[1]!= null){
+	    			String instruNova[] = traducao[0].split(" ");
+		    		 instruNova[1] = instruNova[1].trim();
+		    		arraycont = instruNova[1].split(",");
+		    		 if( !instrucaoValida( instruNova[0], arraycont.length ,instruNova[1])){
+
+		 				System.out.println(" O montador será encerrado!!!!");
+		 				break;
+		 				
+		 			}
+		    		 
+		    		 
+		    		 instruNova = traducao[1].split(" ");
+		    		 instruNova[1] = instruNova[1].trim();
+		    		 arraycont = traducao[1].split(",");
+		    		 if( !instrucaoValida( instruNova[0], arraycont.length ,instruNova[1])){
+		 				
+		    			 
+		    			 System.out.println(" O montador será encerrado!!!!");
+		 				break;
+		 				
+		 			}
+	    			
+	    		}
+	    		else if(traducao[1] == null){
+	    			
+	    			
+	    			String instruNova[] = traducao[0].split(" ");
+		    		 instruNova[1] = instruNova[1].trim();
+		    		arraycont = instruNova[1].split(",");
+		    		 if( !instrucaoValida( instruNova[0], arraycont.length ,instruNova[1])){
+
+		 				System.out.println(" O montador será encerrado!!!!");
+		 				break;
+		 				
+		 			}
+	    			
+	    			
+	    			
+	    			
+	    			
+	    			
+	    		}
+	    		
+	    		}
+		  
+		  
+		  else{
+			  
+			  arraycont = operacao.split(",");
+				if( !instrucaoValida( instrucao, arraycont.length ,operacao)){
+					
+					System.out.println(" O montador será encerrado!!!!");
+					break;
+					
+				}
+			  
+			  
+		  }
 		
-		
-			 arraycont = ((String) linhas.get(i)).split(",");
-			if( !instrucaoValida( instrucao, arraycont.length ,operacao)){
-				
-				System.out.println(" O montador será encerrado!!!!");
-				break;
-				
-			}
+			 
 								
 			
 		
@@ -283,9 +348,12 @@ public class Assembler {
 	 }
 	 
 	 
-	
+		for( int i = 0; i< palavras.size(); i ++){
+			String aux = (String)palavras.get(i);
+			fos.append(aux + "\r\n");
+		}
 	 
-	 
+	 fos.close();
 	 
  }
  
@@ -366,7 +434,6 @@ public boolean validarRegistradores(String linha){
 
 public void filtraInstrucao(String linha){
 	String array[] = linha.split(" ");
-//	System.out.println(array[0]);
 	
 	
 	
@@ -383,7 +450,7 @@ public boolean eDiretriz(String linha){
 
 }
   
-public boolean instrucaoValida(String codigo, int para, String segundaParte){
+public boolean instrucaoValida(String codigo, int para, String segundaParte) throws IOException{
 	
 	if(instrucoes.containsKey(codigo)){
 		String codigos = (String) instrucoes.get(codigo);
@@ -395,11 +462,9 @@ public boolean instrucaoValida(String codigo, int para, String segundaParte){
 
 if(instrucaoSalto(codigo, segundaParte)){
 
-	//System.out.println("Instrucção " + codigo + " Valida");
 			 return true;
 	 }
 else if(para == numparametros){
-	//	 System.out.println("Instrucção " + codigo + " Valida");
 		 if( usaLabel(codigos)){
 			 
 			 String label = pegaLabel(segundaParte);
@@ -407,6 +472,8 @@ else if(para == numparametros){
 			 if(labelExiste(label)){
 				 
 				 instrucoesUsadas.add(codigos);
+				 numInstrucoes++;
+				 memoria.add(codigos);
 				 montar (codigos, segundaParte);
 
 				   return true;
@@ -418,6 +485,8 @@ else if(para == numparametros){
 			 }
 		 }
 		 instrucoesUsadas.add(codigos);
+		 numInstrucoes++;
+		 memoria.add(codigos);
 		 montar (codigos, segundaParte);
   
 		 return true;
@@ -468,7 +537,6 @@ public boolean labelExiste(String label){
 }
 public boolean usaLabel(String codigos){
 	char label = codigos.charAt(3);
-	//System.out.println(label);
 	if(label == '1'){
 		return true;
 	}
@@ -495,45 +563,100 @@ public String pegaLabel(String operacao){
 }
 
 
-public void montar (String instrução, String operacao){
+public void montar (String instrução, String operacao) throws IOException{
 	char tipo = instrução.charAt(0);
-	
-	
+	enderecarLabel();
+	int instrucaoFinal [] = new int [32];
+	int shamt;
+	int numReg;
+	String opcode;
+	int function [];
+	char auxiliar[] = null;
+      Writer fos  = new BufferedWriter(new FileWriter("saida.txt", false));   
+  	String palavra;
 	switch(tipo){
 	
 	
 	case 'R' :
-		
-		int numReg;
+	{
 		char instruc[] = instrução.toCharArray();
 		numReg = Character.getNumericValue(instruc[1]); 
 		int registradorDestino;
 		int registrador1;
 		int registrador2;
-		
-		if(numReg == 2){
-			String opcode = "000000";
+		 opcode = "000000";
+		 auxiliar = opcode.toCharArray();
+		 if(numReg == 2){
 			
-			System.out.println(operacao);
+			
+			
 			 registradorDestino = pegarRegistrador(operacao, 0);
 			 registrador1 = pegarRegistrador(operacao, 1);
+			  function = getFunction(instruc);
+				char deslocamento = instrução.charAt(2);;
+				if(deslocamento == '1'){
+				shamt = pegarConstante(operacao);
+					
+					
+				}
+				
+				else{
+					shamt = 0;
+				}
+				
+				for(int i = 0; i<6 ; i++){
+					instrucaoFinal[i] = Character.getNumericValue(auxiliar[i]); // opcode
+					
+				}
+				instrucaoFinal = montarRegistrador(instrucaoFinal,registradorDestino,registrador1,0,true);
+				instrucaoFinal = montarDeslocamento(shamt,instrucaoFinal);
+				instrucaoFinal = montarFunction(instrucaoFinal,function);
+				
+				 
+	           
+	            
+	         
+				    
+			 palavra = Integer.toString(instrucaoFinal[0]); 
+				 
+				 
+			for(int i = 1; i< instrucaoFinal.length; i++){
+				palavra = palavra +instrucaoFinal[i]; 
+				
+			      
+				
+				System.out.println(instrucaoFinal[i -1]);
+			}
 			
 			
-			System.out.println(registradorDestino + " Recebe " + registrador1 );
-		}
+			
+			
+		 }
 		
 		else if (numReg == 3){
-			String opcode = "000000";
-			 registradorDestino = pegarRegistrador(operacao, 0);
+			shamt = 0;
+			 function = getFunction(instruc);
+			registradorDestino = pegarRegistrador(operacao, 0);
 			 registrador1 = pegarRegistrador(operacao, 1); // pegando o valor numerico do registrador
 			 registrador2 = pegarRegistrador(operacao,2);
-	        System.out.println(registradorDestino + " Recebe " + registrador1 + " segundo " + registrador2);
+	        
+			 instrucaoFinal = montarRegistrador(instrucaoFinal,registradorDestino,registrador1,registrador2,true);
+				instrucaoFinal = montarDeslocamento(shamt,instrucaoFinal);
+				instrucaoFinal = montarFunction(instrucaoFinal,function);
+			
+				 palavra = Integer.toString(instrucaoFinal[0]); 
+				
+				for(int i = 1; i< instrucaoFinal.length; i++){
+					
+					palavra = palavra +instrucaoFinal[i]; 
+					System.out.println(instrucaoFinal[i-1]);
+				}
+				 
+				palavras.add(palavra);
+		        
 		}
 			
 		
-		int function [] = getFunction(instruc);
-		
-		
 		
 		
 		
@@ -541,14 +664,106 @@ public void montar (String instrução, String operacao){
 		
 		
 		break;
-		
+	}	
 		
 	case 'I':
-		break;
+	{
 		
+		char instruc[] = instrução.toCharArray();
+		numReg = Character.getNumericValue(instruc[1]); 
+        System.out.println("Registrador : " + numReg);
+		int registradorDestino = 0;
+		int registrador1 = 0;
+		int registrador2 = 0;
+		 int constante = 0;
+		instrucaoFinal =  montarOpcode(instrução,instrucaoFinal);
+	    
+			
+			 if(numReg == 3){
+				System.out.println(operacao);
+				 registradorDestino = pegarRegistrador(operacao, 0);
+				 registrador1 = pegarRegistrador(operacao, 1);
+	   			  constante = pegarConstante(operacao);	
+			
+	   			instrucaoFinal = montarRegistrador(instrucaoFinal,registradorDestino,registrador1,constante,false);
+				instrucaoFinal = montarConstante( constante, instrucaoFinal);
+			 
+			 
+			 }
+			
+			else if(numReg == 2){
+				
+				System.out.println(operacao);
+				 registradorDestino = pegarRegistrador(operacao, 0);
+			     constante = pegarConstante(operacao);	
+			        instrucaoFinal = montarRegistrador(instrucaoFinal,registradorDestino,0,constante,false);
+					instrucaoFinal = montarConstante( constante, instrucaoFinal);
+			    
+			}
+
+            
+			
+				 			
+			  palavra = Integer.toString(instrucaoFinal[0]); 
+				
+				
+			for(int i = 1; i< instrucaoFinal.length; i++){
+				palavra = palavra +instrucaoFinal[i]; 
+				
 		
-	
+				System.out.println(instrucaoFinal[i-1]);
+			}
+		
+			palavras.add(palavra);
+
+		
+			
+			 
+		}
+	break;
 	case 'J':
+		
+		if(instrução.equals("J")){
+			
+			instrucaoFinal =  montarOpcode(instrução,instrucaoFinal);
+			String label = pegaLabel(operacao);
+			int constante = (int) labelEnderecada.get(label);
+			instrucaoFinal = montarConstante(constante,instrucaoFinal);
+			
+			 palavra = Integer.toString(instrucaoFinal[0]); 
+			for(int i = 1; i< instrucaoFinal.length; i++){
+				palavra = palavra +instrucaoFinal[i]; 
+				System.out.println(instrucaoFinal[i-1]);
+			}
+			
+			 
+			palavras.add(palavra);
+
+		}
+		 
+
+		if(instrução.equals("jal")){
+			
+			instrucaoFinal =  montarOpcode(instrução,instrucaoFinal);
+			String label = pegaLabel(operacao);
+			int constante = (int) labelEnderecada.get(label);
+			instrucaoFinal = montarConstante(constante,instrucaoFinal);
+			
+			 palavra = Integer.toString(instrucaoFinal[0]); 
+			for(int i = 1; i< instrucaoFinal.length; i++){
+				palavra = palavra +instrucaoFinal[i]; 
+				System.out.println(instrucaoFinal[i-1]);
+			}
+			
+			 
+			palavras.add(palavra);
+
+		}
+		
+		
+		
+		
+		
 		break;
 	
 	
@@ -563,13 +778,27 @@ public void montar (String instrução, String operacao){
 	
 	
 	
-	
+fos.close();	
 	
 	
 	
 	
 }
 
+
+private int[] montarConstante(int constante, int instrucaoFinal[]) {
+	String convertido = converterBinario(constante);
+	
+	String nova = complemento(convertido,16);
+	char array [] = nova.toCharArray();
+	for(int i = 0; i< 16; i++){
+	
+		
+		instrucaoFinal[i + 16] = Character.getNumericValue(array[i]);		
+	}
+	
+	return instrucaoFinal;
+}
 
 public int pegarRegistrador(String instrucao, int pos){
 	String termos[] = instrucao.split(",");
@@ -583,6 +812,104 @@ public int pegarRegistrador(String instrucao, int pos){
 	
 }
 
+public int [] montarRegistrador(int instrucaoFinal[],int registradorDestino,int registrador1, int registrador2, boolean flag){
+	
+	String convertido = converterBinario(registradorDestino);
+	String nova = complemento(convertido,5);
+	char array [] = nova.toCharArray();
+	for(int i = 0; i<5; i++){
+		instrucaoFinal[i + 6] = Character.getNumericValue(array[i]);
+	}
+	
+	
+	convertido = converterBinario(registrador1);
+	nova = complemento(convertido,5);
+	array = nova.toCharArray();
+	for(int i = 0; i<5; i++){
+		instrucaoFinal[i + 11] = Character.getNumericValue(array[i]);
+	}
+	
+		if(flag ){
+			convertido = converterBinario(registrador2);
+			nova = complemento(convertido,5);
+			array = nova.toCharArray();
+			for(int i = 0; i<5; i++){
+				instrucaoFinal[i + 16] = Character.getNumericValue(array[i]);
+			}
+			
+			return instrucaoFinal;
+			
+			
+			
+		}
+		
+		
+		else{
+			convertido = converterBinario(registrador2);
+			nova = complemento(convertido,16);
+			array = nova.toCharArray();
+			for(int i = 0; i<5; i++){
+				instrucaoFinal[i + 16] = Character.getNumericValue(array[i]);
+			}
+			
+			return instrucaoFinal;
+			
+		}
+		
+	
+
+	
+	
+	
+
+
+
+
+}
+
+public int [] montarDeslocamento(int shamt, int instrucaoFinal []){
+	
+
+	String des = converterBinario(shamt);
+    String nova = complemento(des,5);
+    char aux [] = nova.toCharArray();
+    
+    for( int i = 0; i< 5; i++){
+    	instrucaoFinal[i+21] =Character.getNumericValue(aux[i]) ;
+    }
+	
+  return instrucaoFinal;
+
+}
+
+public int [] montarOpcode(String instrução, int instrucaoFinal []){
+	
+
+	char op [] = instrução.toCharArray();
+	for(int i = 0; i< 6; i ++){
+		
+		instrucaoFinal[i] = Character.getNumericValue(op[i +5]);
+		
+		
+		
+	}
+	
+	return instrucaoFinal;
+    
+
+}
+
+
+
+
+public int pegarConstante (String instrucao){ 
+	String termos[] = instrucao.split(",");
+	String aux = termos[termos.length -1];
+	char resultado[] = aux.toCharArray();
+	int constante =  Character.getNumericValue(resultado[0]);
+	return constante;
+}
+
 public int montarRegistrador (String registrador){
 	
 	int reg = (int) registradores.get(registrador);
@@ -591,6 +918,30 @@ public int montarRegistrador (String registrador){
 	
 }
 
+public int [] montarFunction(int instrucaoFinal[], int function[]){
+	for(int i = 0; i< 6; i++){
+		
+		instrucaoFinal[i+26] = function[i];
+		
+		
+	}
+	
+	return instrucaoFinal;
+}
+
+public int [] montarEndereco(int instrucaoFinal[], int endereco){
+String convertido =	converterBinario(endereco);
+String end = complemento (convertido, 26);	
+char array[] = end.toCharArray();
+	for(int i = 0; i< 26; i++){
+		
+		instrucaoFinal[i +6] = array[i];
+		
+		
+	}
+	
+	return instrucaoFinal;
+}
 
 public boolean ePseudo(String instrucao){
 	if(pseudoInstrucao.containsKey(instrucao) ){
@@ -603,53 +954,197 @@ public boolean ePseudo(String instrucao){
 
 public int [] getFunction(char [] instrucao){
 	int function [] = new int[6];
-	for(int i = 10; i < instrucao.length; i++){
-		function[i] = Character.getNumericValue(instrucao[i]);
+	for(int i = 0; i < 6; i++){
+		function[i] = Character.getNumericValue(instrucao[i + 10]);
 		
 	}
 
   return function;
 
 }
-public void traduzirPseudo(String operacao []){
+
+
+public void enderecarLabel(){
+
+	 try {
+	      FileReader arq = new FileReader(nomeArq);
+	      BufferedReader lerArq = new BufferedReader(arq);
+	 
+	      String linha = lerArq.readLine(); 
+	     
+	      while (linha != null) {
+	        
+	        linha = lerArq.readLine();
+	        if(linha == null){
+	        	break;
+	        }
 	
+	     if(linha.contains(":")){
+		     String array [] = linha.split(":");
+		     String label = array[0];
+	    	 linha = lerArq.readLine();
+
+	    	 if(linha!=null){
+	    		 String temp [] = linha.split(" ");
+	    		 String codigos = (String) instrucoes.get(temp[0]);
+	    		 int endereco = memoria.indexOf(codigos);
+	    		 labelEnderecada.put(label, endereco);
+	    		 
+	    	 }
+	     }
+	     else{
+		        linha = lerArq.readLine();
+
+	     }
+	      
+	      
+	      
+	      }
+	        arq.close();
+		    } catch (IOException e) {
+		        System.err.printf("Erro na abertura do arquivo: %s.\n",
+		          e.getMessage());
+		    }
+	      
+	      
+	      
+	      
+	      }
+
+public String [] traduzirPseudo(String operacao, String segundaParte ){
 	
-	switch(operacao [0]){
+	String instrucao [] = new String[2];
+	
+	switch(operacao){
 	
 	case "li":
 	{
+		String registrador[] = segundaParte.split(",");
+		segundaParte = segundaParte.trim();
+
+		int constante = pegarConstante(segundaParte);
+		instrucao[0] = "lui $at";
+		instrucao[0] =  instrucao[0]+ ","+ constante;
 		
+		
+		instrucao[1] = "ori " + registrador[0]+",$at"+","+ constante;
 		
 		
 		break;
 		
 		
 	}
+	
+	
+	case "move":
+		
+	{
+		String registrador[] = segundaParte.split(",");
+		segundaParte = segundaParte.trim();
+         String regDestino = registrador[0];
+         String regOrigem = registrador [1];
+         int constante = 0; 
+		
+		instrucao[0] = "addi " + regDestino + "," + regOrigem +","+ constante;
 		
 		
 		
 		
 		
+		
+		
+		
+		
+		
+		
+		break;
+	}
+		
+		
+	case "not" :
+		
+	{
+		String registrador[] = segundaParte.split(",");
+		segundaParte = segundaParte.trim();
+         String regDestino = registrador[0];
+         String regOrigem = registrador [1];
+		
+		instrucao[0] = "addi " + regDestino + "," + regOrigem +","+ "$zero";
+		
+		
+		
+		
+		
+		break;
+		
+		
+			
+	}
 	
-	
-	
-	
-	
-	
+	case "movn" :
+	{
+		String registrador[] = segundaParte.split(",");
+		segundaParte = segundaParte.trim();
+         String regDestino = registrador[0];
+         String regOrigem = registrador [1];
+		
+		instrucao[0] = "beq " + regDestino + "," + regOrigem +","+ 1;
+		instrucao[0] = "addi " + regDestino;
+		
+		
+		
+		
+		break;
+	}
 	
 	
 	
 	
 	}
-	
+	return instrucao;
 	
 }
 
 
 
+public String converterBinario(int valor){
+	
+	
+	
+	int resto = -1;
+	   StringBuilder sb = new StringBuilder();
+	 
+	   if (valor == 0) {
+	      return "0";
+	   }
+	 
+	   // enquanto o resultado da divisão por 2 for maior que 0 adiciona o resto ao início da String de retorno
+	   while (valor > 0) {
+	      resto = valor % 2;
+	      valor = valor / 2;
+	      sb.insert(0, resto);
+	   }
+	 
+	   return sb.toString();
+}
 
+public String complemento (String convertido, int total){
+	 StringBuilder sb = new StringBuilder();
+	char auxiliar [] = convertido.toCharArray();
+	if(auxiliar.length != total){
+	int complemento = total - auxiliar.length;
+	for(int i = 0 ; i < complemento; i++){
 
-
+	sb.append("0");
+	
+	}
+	
+	return sb + convertido;
+	
+	
+	}
+	return convertido;
+}
 
 
 }
