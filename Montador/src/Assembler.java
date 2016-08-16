@@ -161,17 +161,17 @@ public class Assembler {
 		instrucoes.put("bne",   "I2100000101");
 		instrucoes.put("bnez",  "I1100000111");
 		//Load and store
-		instrucoes.put("lb",    "I211100000");
-		instrucoes.put("lw",    "I211100011");
-		instrucoes.put("lh",    "I211100001");
-		instrucoes.put("sb",    "I211101000");
-		instrucoes.put("sh",    "I211101001");
-		instrucoes.put("sw",    "I211101011");
+		instrucoes.put("lb",    "I2110100000");
+		instrucoes.put("lw",    "I2100100011");
+		instrucoes.put("lh",    "I2110100001");
+		instrucoes.put("sb",    "I2110101000");
+		instrucoes.put("sh",    "I2110101001");
+		instrucoes.put("sw",    "I2100101011");
 		
 		//J - instructions------------------------------------
 		//Branches and jump
-		instrucoes.put("J",     "J01000010");
-		instrucoes.put("jal",   "J01000011");
+		instrucoes.put("J",     "J11000010");
+		instrucoes.put("jal",   "J11000011");
 
 	}
 
@@ -274,6 +274,7 @@ public class Assembler {
 		  String operacao = sb.toString().trim(); // retira espaços em branco da operação
 			String arraycont [];
            String codigos = (String) instrucoes.get(instrucao);
+           System.out.println(instrucao);
      
 		  if(codigos.charAt(4) == '1'){
 	    		String traducao[] =	traduzirPseudo(instrucao,operacao );
@@ -326,13 +327,26 @@ public class Assembler {
 		  
 		  else{
 			  
-			  arraycont = operacao.split(",");
-				if( !instrucaoValida( instrucao, arraycont.length ,operacao)){
+			if(operacao.contains(",")){
+				arraycont = operacao.split(",");
+               if( !instrucaoValida( instrucao, arraycont.length ,operacao)){
 					
 					System.out.println(" O montador será encerrado!!!!");
 					break;
 					
 				}
+			 
+			}
+				
+			else{
+if( !instrucaoValida( instrucao, 1 ,operacao)){
+					
+					System.out.println(" O montador será encerrado!!!!");
+					break;
+					
+				}
+				
+			}
 			  
 			  
 		  }
@@ -399,13 +413,29 @@ public boolean validarRegistradores(String linha){
     	for(int i = 0; i< linha.length(); i++){
     		char aux = array[i];
     		if(aux == '$'){
-    		
     			
-    			StringBuilder sb = new StringBuilder();
-    			sb.append(array[i]);
-    			sb.append(array[i +1]);
-    			sb.append(array[i +2]);
-    			nomeRegistrador = sb.toString();
+    			if(array[i+1] == 'z'){
+        			StringBuilder sb = new StringBuilder();
+        			sb.append(array[i]);
+        			sb.append(array[i +1]);
+        			sb.append(array[i +2]);
+        			sb.append(array[i +3]);
+        			sb.append(array[i +4]);
+        			nomeRegistrador = sb.toString();
+        			
+        			
+        		}
+    		
+    			else{
+    				
+    				StringBuilder sb = new StringBuilder();
+        			sb.append(array[i]);
+        			sb.append(array[i +1]);
+        			sb.append(array[i +2]);
+        			nomeRegistrador = sb.toString();
+    				
+    			}
+    			
     			
     			
     			
@@ -586,6 +616,19 @@ public void montar (String instrução, String operacao) throws IOException{
 		int registrador2;
 		 opcode = "000000";
 		 auxiliar = opcode.toCharArray();
+		
+		 if(numReg ==1){
+			shamt = 0;
+			 registradorDestino = pegarRegistrador(operacao, 0);
+				instrucaoFinal = montarRegistrador(instrucaoFinal,registradorDestino,0,0,true);
+				 function = getFunction(instruc);
+				 instrucaoFinal = montarDeslocamento(shamt,instrucaoFinal);
+					instrucaoFinal = montarFunction(instrucaoFinal,function);
+					
+			 
+			 
+		 }
+		 
 		 if(numReg == 2){
 			
 			
@@ -635,24 +678,61 @@ public void montar (String instrução, String operacao) throws IOException{
 		
 		else if (numReg == 3){
 			shamt = 0;
-			 function = getFunction(instruc);
-			registradorDestino = pegarRegistrador(operacao, 0);
-			 registrador1 = pegarRegistrador(operacao, 1); // pegando o valor numerico do registrador
-			 registrador2 = pegarRegistrador(operacao,2);
-	        
-			 instrucaoFinal = montarRegistrador(instrucaoFinal,registradorDestino,registrador1,registrador2,true);
-				instrucaoFinal = montarDeslocamento(shamt,instrucaoFinal);
-				instrucaoFinal = montarFunction(instrucaoFinal,function);
 			
-				 palavra = Integer.toString(instrucaoFinal[0]); 
+			function = getFunction(instruc);
+			
+			
+			
+
+				registradorDestino = pegarRegistrador(operacao, 0);
+				if(registradorDestino == 29){
 				
-				for(int i = 1; i< instrucaoFinal.length; i++){
-					
-					palavra = palavra +instrucaoFinal[i]; 
-					System.out.println(instrucaoFinal[i-1]);
+				
+				registrador1 = pegarRegistrador(operacao, 1); // pegando o valor numerico do registrador
+				int constante = pegarConstante(operacao);
+				 instrucaoFinal = montarRegistrador(instrucaoFinal,registradorDestino,registrador1,constante,false);
+					instrucaoFinal = montarConstante( constante, instrucaoFinal);
+			
+					 palavra = Integer.toString(instrucaoFinal[0]); 
+						
+						for(int i = 1; i< instrucaoFinal.length; i++){
+							
+							palavra = palavra +instrucaoFinal[i]; 
+							System.out.println(instrucaoFinal[i-1]);
+						}
+				
+				
+						palavras.add(palavra);
+			
 				}
+			
+			
+			
+			else{
+				
+				registradorDestino = pegarRegistrador(operacao, 0);
+				 registrador1 = pegarRegistrador(operacao, 1); // pegando o valor numerico do registrador
+				 registrador2 = pegarRegistrador(operacao,2);
+		        
+				 instrucaoFinal = montarRegistrador(instrucaoFinal,registradorDestino,registrador1,registrador2,true);
+					instrucaoFinal = montarDeslocamento(shamt,instrucaoFinal);
+					instrucaoFinal = montarFunction(instrucaoFinal,function);
+				
+					 palavra = Integer.toString(instrucaoFinal[0]); 
+					
+					for(int i = 1; i< instrucaoFinal.length; i++){
+						
+						palavra = palavra +instrucaoFinal[i]; 
+						System.out.println(instrucaoFinal[i-1]);
+					}
+			
+			
+					palavras.add(palavra);
+			}
+			
+			
 				 
-				palavras.add(palavra);
+				
 		        
 		}
 			
@@ -670,6 +750,8 @@ public void montar (String instrução, String operacao) throws IOException{
 	{
 		
 		char instruc[] = instrução.toCharArray();
+		char regOrigem [] = new char [3];
+		
 		numReg = Character.getNumericValue(instruc[1]); 
         System.out.println("Registrador : " + numReg);
 		int registradorDestino = 0;
@@ -677,9 +759,20 @@ public void montar (String instrução, String operacao) throws IOException{
 		int registrador2 = 0;
 		 int constante = 0;
 		instrucaoFinal =  montarOpcode(instrução,instrucaoFinal);
-	    
+	    if(instrucaoFinal[0] == '1'){
+	    	registradorDestino = pegarRegistrador(operacao, 0);
+	    	String aux [] = operacao.split(",");
+	    	String formato  = aux[1].trim();
+	    	int offset = Character.getNumericValue(aux [1].charAt(0));
+	    	 regOrigem [0] = aux[1].charAt(2); 
+	    	 regOrigem [1] = aux[1].charAt(3);
+	    	 regOrigem [2]  = aux[1].charAt(4); 
+	    	 instrucaoFinal = montarRegistrador(instrucaoFinal,registradorDestino,registrador1,offset,false);
+				instrucaoFinal = montarConstante( offset, instrucaoFinal);
+ 	    	
+	    }
 			
-			 if(numReg == 3){
+	    else if(numReg == 3){
 				System.out.println(operacao);
 				 registradorDestino = pegarRegistrador(operacao, 0);
 				 registrador1 = pegarRegistrador(operacao, 1);
