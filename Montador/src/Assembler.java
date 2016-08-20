@@ -620,7 +620,7 @@ public void montar (String instrução, String operacao) throws IOException{
 		 if(numReg ==1){
 			shamt = 0;
 			 registradorDestino = pegarRegistrador(operacao, 0);
-				instrucaoFinal = montarRegistrador(instrucaoFinal,registradorDestino,0,0,true);
+				instrucaoFinal = montarRegistrador(instrucaoFinal,0,0,registradorDestino,true);
 				 function = getFunction(instruc);
 				 instrucaoFinal = montarDeslocamento(shamt,instrucaoFinal);
 					instrucaoFinal = montarFunction(instrucaoFinal,function);
@@ -651,7 +651,7 @@ public void montar (String instrução, String operacao) throws IOException{
 					instrucaoFinal[i] = Character.getNumericValue(auxiliar[i]); // opcode
 					
 				}
-				instrucaoFinal = montarRegistrador(instrucaoFinal,registradorDestino,registrador1,0,true);
+				instrucaoFinal = montarRegistrador(instrucaoFinal,registrador1,0,registradorDestino,true);
 				instrucaoFinal = montarDeslocamento(shamt,instrucaoFinal);
 				instrucaoFinal = montarFunction(instrucaoFinal,function);
 				
@@ -690,7 +690,7 @@ public void montar (String instrução, String operacao) throws IOException{
 				
 				registrador1 = pegarRegistrador(operacao, 1); // pegando o valor numerico do registrador
 				int constante = pegarConstante(operacao);
-				 instrucaoFinal = montarRegistrador(instrucaoFinal,registradorDestino,registrador1,constante,false);
+				 instrucaoFinal = montarRegistrador(instrucaoFinal,registrador1,registradorDestino,constante,false);
 					instrucaoFinal = montarConstante( constante, instrucaoFinal);
 			
 					 palavra = Integer.toString(instrucaoFinal[0]); 
@@ -714,7 +714,7 @@ public void montar (String instrução, String operacao) throws IOException{
 				 registrador1 = pegarRegistrador(operacao, 1); // pegando o valor numerico do registrador
 				 registrador2 = pegarRegistrador(operacao,2);
 		        
-				 instrucaoFinal = montarRegistrador(instrucaoFinal,registradorDestino,registrador1,registrador2,true);
+				 instrucaoFinal = montarRegistrador(instrucaoFinal,registrador1,registrador2,registradorDestino,true);
 					instrucaoFinal = montarDeslocamento(shamt,instrucaoFinal);
 					instrucaoFinal = montarFunction(instrucaoFinal,function);
 				
@@ -759,7 +759,10 @@ public void montar (String instrução, String operacao) throws IOException{
 		int registrador2 = 0;
 		 int constante = 0;
 		instrucaoFinal =  montarOpcode(instrução,instrucaoFinal);
-	    if(instrucaoFinal[0] == '1'){
+	   
+		
+		
+		if(instrucaoFinal[0] == '1'){
 	    	registradorDestino = pegarRegistrador(operacao, 0);
 	    	String aux [] = operacao.split(",");
 	    	String formato  = aux[1].trim();
@@ -767,7 +770,7 @@ public void montar (String instrução, String operacao) throws IOException{
 	    	 regOrigem [0] = aux[1].charAt(2); 
 	    	 regOrigem [1] = aux[1].charAt(3);
 	    	 regOrigem [2]  = aux[1].charAt(4); 
-	    	 instrucaoFinal = montarRegistrador(instrucaoFinal,registradorDestino,registrador1,offset,false);
+	    	 instrucaoFinal = montarRegistrador(instrucaoFinal,registrador1,registradorDestino,offset,false);
 				instrucaoFinal = montarConstante( offset, instrucaoFinal);
  	    	
 	    }
@@ -778,7 +781,7 @@ public void montar (String instrução, String operacao) throws IOException{
 				 registrador1 = pegarRegistrador(operacao, 1);
 	   			  constante = pegarConstante(operacao);	
 			
-	   			instrucaoFinal = montarRegistrador(instrucaoFinal,registradorDestino,registrador1,constante,false);
+	   			instrucaoFinal = montarRegistrador(instrucaoFinal,registrador1,registradorDestino,constante,false);
 				instrucaoFinal = montarConstante( constante, instrucaoFinal);
 			 
 			 
@@ -789,7 +792,7 @@ public void montar (String instrução, String operacao) throws IOException{
 				System.out.println(operacao);
 				 registradorDestino = pegarRegistrador(operacao, 0);
 			     constante = pegarConstante(operacao);	
-			        instrucaoFinal = montarRegistrador(instrucaoFinal,registradorDestino,0,constante,false);
+			        instrucaoFinal = montarRegistrador(instrucaoFinal,0,registradorDestino,constante,false);
 					instrucaoFinal = montarConstante( constante, instrucaoFinal);
 			    
 			}
@@ -879,6 +882,7 @@ fos.close();
 }
 
 
+
 private int[] montarConstante(int constante, int instrucaoFinal[]) {
 	String convertido = converterBinario(constante);
 	
@@ -892,6 +896,7 @@ private int[] montarConstante(int constante, int instrucaoFinal[]) {
 	
 	return instrucaoFinal;
 }
+
 
 public int pegarRegistrador(String instrucao, int pos){
 	String termos[] = instrucao.split(",");
@@ -1116,6 +1121,8 @@ public String [] traduzirPseudo(String operacao, String segundaParte ){
 		segundaParte = segundaParte.trim();
 
 		int constante = pegarConstante(segundaParte);
+		
+		
 		instrucao[0] = "lui $at";
 		instrucao[0] =  instrucao[0]+ ","+ constante;
 		

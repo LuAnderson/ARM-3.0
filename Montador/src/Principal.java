@@ -2,16 +2,21 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Scanner;
+import java.util.Scanner;
 
+import javax.swing.JOptionPane;
 
 public class Principal {
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 
 	Assembler ass = new Assembler();
 	
-	ass.primeiraLeitura("C:/Users/win7/Desktop/SD/Montador/src/PotenciaTeste.asm");
-	ass.segundaLeitura("C:/Users/win7/Desktop/SD/Montador/src/PotenciaTeste.asm");		 
+	String nome = JOptionPane.showInputDialog("Entre com o endereço doa arquivo :");
+	
+	ass.primeiraLeitura(nome + ".asm");
+	ass.segundaLeitura(nome + ".asm");		 
 			
 		
 		  }
